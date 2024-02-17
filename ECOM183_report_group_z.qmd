@@ -1,0 +1,272 @@
+---
+title: "Investgating Ramsey Pricing and the EPG"
+subtitle: "An Analysis of the UK's Energy Price Guarentee"
+author: "Rudi, Alex, and Zac"
+format:
+  html:
+    code-fold: false
+jupyter: python3
+editor: source
+---
+
+## Model Set Up 
+
+### The Consumer
+
+First, we define the parameters for the demand functions of High Income (HI) and Low Income (LI) groups.
+
+Demand function for High Income Consumers: 
+
+$q_{HI} = A - B * p_HI$
+
+Demand function for Low Income Consumers: 
+
+$q_{LI} = C - D * p_LI$
+
+These equations represent the basic linear demand relationship where $q$ is the quantity demanded, and $p$ is the price. The quantity demanded *decreases* as the price increases.
+
+Here we select four different parameters: `A`, `B`, `C` and `D`
+
+These parameters determine the intercept and slope of the demand curves for each group. The intercepts (`A` and `C`) represent the quantity demanded when the price is zero, and the slopes (`B` and `D`) represent the rate at which the quantity demanded decreases as the price increases.
+
+
+```{python}
+#| echo: false
+
+# Neccessary Libraries
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import fsolve
+```
+
+```{python}
+# Define the parameters for the demand functions of High Income (HI) and Low Income (LI) groups
+# Demand function for HI: q_HI = A - B * p_HI
+# Demand function for LI: q_LI = C - D * p_LI
+A, B, C, D = 0.05, 0.01875, 0.04, 0.03  # A, B for HI and C, D for LI
+```
+
+In general, the intercepts (`A` and `C`) tell us about the baseline consumption levels without the influence of price, reflecting factors like needs, preferences, and possibly non-price related socio-economic factors. The slopes (`B` and `D`), on the other hand, provide insight into how responsive each group is to price changes, indicating their price elasticity of demand.
+
+Next, we can specify the Price Elasticity of Demand for each of the Income Groups.
+
+::: callout-important
+We should actually reverse engineer the gradients of each demand function!
+:::
+
+Here are some empirical estimates:
+
+| Income Level | % in UK | Energy PE | Electricity EP | National Gas PE |
+|--------------|---------|-----------|----------------|-----------------|
+| Low          | 0.25    | -0.461    | -0.278         | -0.489          |
+| Middle       | 0.55    | -0.400    | -0.241         | -0.424          |
+| Upper        | 0.15    | -0.375    | -0.226         | -0.398          |
+| High         | 0.05    | -0.324    | -0.195         | -0.34           |
+
+
+```{python}
+# Elasticities of demand for HI and LI groups. Negative values indicate inverse relationship
+# between price and quantity demanded, which is typical in demand functions.
+epsilon_HI, epsilon_LI = -0.324, -0.461  # Less elastic for HI, more elastic for LI
+```
+
+### The Firm
+
+Now we need to specify parameters relevant to the firm. 
+
+Specifically, the firm faces 3 key constraints:
+
+1) The Capacity Constraint;
+2) The Break-Even Constraint;
+3) The Demand Constraint;
+
+We can define the parameters as follows:
+
+```{python}
+# Fixed costs that the energy provider needs to cover and the number of days per month
+fixed_costs = 30  # Monthly fixed costs in $
+days_per_month = 30  # Average number of days in a month for daily revenue calculation
+
+# Capacity constraint (maximum energy supply per day) and daily break-even revenue
+capacity_constraint = 1000  # MWh per day
+break_even_revenue = fixed_costs / days_per_month  # Daily revenue needed to break even
+
+# Marginal cost of supplying energy in £/MWh
+MC = 4
+```
+
+## The Uniform Pricing Scenario
+
+The EPG was implemented as a unit rate subsidy at point of use, it reduced the cost of each individual unit of electricity consumed and as such led to a reduction in overall cost of energy. 
+
+This was uniform across all domestic consumers and therefore not means tested.
+
+This modelling investigates the price to consumers if the rate was determined solely by the market.
+
+```{python}
+#| output: false
+
+# Uniform pricing scenario: A single price for both groups
+# Define functions for total demand and revenue with a uniform price
+def total_demand_uniform_price(price):
+    # Total demand at a given uniform price
+    return (A - B * price) + (C - D * price)
+
+def total_revenue_uniform_price(price):
+    # Total revenue at a given uniform price
+    return price * total_demand_uniform_price(price)
+
+# Define a function for the break-even constraint under uniform pricing
+def break_even_uniform_price_constraint(price):
+    # Revenue should match the daily break-even requirement
+    return total_revenue_uniform_price(price) - break_even_revenue
+
+# Solve for the uniform price that meets the break-even requirement
+uniform_price_initial_guess = 10
+uniform_price_solution = fsolve(break_even_uniform_price_constraint, uniform_price_initial_guess)[0]
+
+```
+
+```{python}
+#| echo: false
+round(uniform_price_solution, ndigits=2)
+```
+
+Using this price, we can then calculate consumer surplus.
+
+```{python}
+#| output: false
+
+# Function to calculate consumer surplus: CS = 0.5 * base * height
+def calculate_consumer_surplus(a, b, price):
+    base = a - b * price  # base of the demand triangle
+    height = a / b - price  # height of the demand triangle
+    return 0.5 * base * height  # Area of triangle representing consumer surplus
+
+# Consumer surplus for HI and LI under uniform pricing
+cs_HI_uniform = calculate_consumer_surplus(A, B, uniform_price_solution)
+cs_LI_uniform = calculate_consumer_surplus(C, D, uniform_price_solution)
+
+```
+
+```{python}
+print(f"Uniform Price: ${uniform_price_solution:.2f}")
+print(f"High Income Consumer Surplus: ${cs_HI_uniform:.2f}")
+print(f"Low Income Consumer Surplus: ${cs_LI_uniform:.2f}")
+```
+
+## Ramsey pricing
+
+```{python}
+# Ramsey pricing formula: p_i - MC = k * p_i * epsilon_i
+# The goal is to find prices for HI and LI that satisfy this formula and meet the capacity and break-even constraints
+
+# Define a function to calculate total revenue based on Ramsey pricing
+def revenue(k):
+    # Prices for HI and LI are calculated using the Ramsey formula
+    p_HI = MC / (1 - k * epsilon_HI)
+    p_LI = MC / (1 - k * epsilon_LI)
+    
+    # Quantities demanded for HI and LI are derived from the demand functions
+    q_HI = A - B * p_HI
+    q_LI = C - D * p_LI
+    
+    # Total revenue calculation
+    return p_HI * q_HI + p_LI * q_LI
+
+# Define a function for the break-even constraint
+def break_even_constraint(k):
+    # The revenue must match the break-even revenue for sustainability
+    return revenue(k) - break_even_revenue
+
+# Solve for k using fsolve, with an initial guess
+k_initial = 10
+k_solution = fsolve(break_even_constraint, k_initial)[0]
+
+# Calculate the prices for HI and LI using the solved value of k
+p_HI_solution = MC / (1 - k_solution * epsilon_HI)
+p_LI_solution = MC / (1 - k_solution * epsilon_LI)
+
+
+# Consumer surplus for HI and LI under Ramsey pricing
+cs_HI_ramsey = calculate_consumer_surplus(A, B, p_HI_solution)
+cs_LI_ramsey = calculate_consumer_surplus(C, D, p_LI_solution)
+```
+
+```{python}
+print("Ramsey Pricing:")
+print(f"High Income Price: ${p_HI_solution:.2f}, Consumer Surplus: ${cs_HI_ramsey:.2f}")
+print(f"Low Income Price: ${p_LI_solution:.2f}, Consumer Surplus: ${cs_LI_ramsey:.2f}")
+print("\nUniform Pricing:")
+```
+
+Now we can see how much this affects consumer surplus as a whole
+
+```{python}
+print("\nTotal Consumer Surplus Per Year under Ramsey Pricing:")
+print((cs_HI_ramsey + cs_LI_ramsey)*365)
+print("Total Consumer Surplus Per Year under Uniform Pricing:")
+print((cs_HI_uniform + cs_LI_uniform)*365)
+```
+
+# CHARTS
+
+```{python}
+# Plotting
+
+# Function to plot both HI and LI demand curves and consumer surpluses on the same graph
+# with total consumer surplus annotation
+def plot_combined_demand_curves_with_total_cs(a_HI, b_HI, price_HI, a_LI, b_LI, price_LI, title, cs_HI, cs_LI):
+    # Generate a range of quantities for HI and LI
+    quantities_HI = np.linspace(0, a_HI, 500)
+    quantities_LI = np.linspace(0, a_LI, 500)
+    
+    # Calculate prices for each quantity using the inverse demand function
+    prices_HI = (a_HI - quantities_HI) / b_HI
+    prices_LI = (a_LI - quantities_LI) / b_LI
+
+    # Calculate total consumer surplus
+    total_cs = cs_HI + cs_LI
+    
+    # Create the plot
+    plt.figure(figsize=(12, 8))
+
+    # Plot HI demand curve and consumer surplus
+    plt.plot(quantities_HI, prices_HI, label="HI Demand Curve")
+    plt.fill_between(quantities_HI, prices_HI, price_HI, where=(quantities_HI <= (a_HI - b_HI * price_HI)), 
+                     color='lightblue', alpha=0.5, label=f"HI CS: ${cs_HI:.2f}")
+
+    # Plot LI demand curve and consumer surplus
+    plt.plot(quantities_LI, prices_LI, label="LI Demand Curve", color='orange')
+    plt.fill_between(quantities_LI, prices_LI, price_LI, where=(quantities_LI <= (a_LI - b_LI * price_LI)), 
+                     color='lightgreen', alpha=0.5, label=f"LI CS: ${cs_LI:.2f}")
+
+    # Price lines for HI and LI
+    plt.axhline(y=price_HI, color='blue', linestyle='--', label=f"HI Price = ${price_HI:.2f}")
+    plt.axhline(y=price_LI, color='green', linestyle='--', label=f"LI Price = ${price_LI:.2f}")
+
+    # Total consumer surplus annotation
+    plt.annotate(f"Total CS: ${total_cs:.2f}", xy=(0.05, 0.95), xycoords='axes fraction', 
+                 fontsize=12, bbox=dict(boxstyle="round,pad=0.3", edgecolor='black', facecolor='yellow'))
+
+    # Labels and title
+    plt.xlabel("Quantity Demanded")
+    plt.ylabel("Price")
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+# Plot for both groups under Uniform Pricing with total consumer surplus annotation
+plot_combined_demand_curves_with_total_cs(A, B, uniform_price_solution, C, D, uniform_price_solution, 
+                                          "Uniform Pricing - High Income & Low Income Groups", 
+                                          cs_HI_uniform, cs_LI_uniform)
+
+# Plot for both groups under Ramsey Pricing with total consumer surplus annotation
+plot_combined_demand_curves_with_total_cs(A, B, p_HI_solution, C, D, p_LI_solution, 
+                                          "Ramsey Pricing - High Income & Low Income Groups", 
+                                          cs_HI_ramsey, cs_LI_ramsey)
+
+
+
+```

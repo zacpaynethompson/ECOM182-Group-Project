@@ -1,0 +1,544 @@
+---
+title: "The effects of the EPG and EBSS on consumer welfare"
+subtitle: "ECOM182 - Group Z"
+author: "Alex Robertson, Zac Payne Thompson, Rudi Narendran"
+format:
+  revealjs:
+    slide-number: true
+    scrollable: true
+    tbl-cap-location: bottom
+jupyter: python3
+editor: source
+---
+
+## Presentation Overview {.smaller}
+
+1.  **Introduction**
+
+    -   Examining EPG and EBSS in response to rising energy prices.
+
+2.  **Policy Analysis**
+
+    -   Comparative impact of EPG (unit rate subsidy) and EBSS (direct financial support).
+
+3.  **Energy Elasticity**
+
+    -   Energy consumption patterns across different income levels.
+
+4.  **Pricing Models**
+
+    -   Uniform vs. Ramsey pricing; implications for consumer surplus.
+
+5.  **Conclusion**
+
+    -   Efficacy of income-based energy policies; policy recommendations.
+
+## Introduction and Background {.smaller}
+
+-   **Rising Wholesale Energy Prices:** Steep increase due to post-Covid recovery and the Russia-Ukraine conflict.^[10]^
+
+-   **Impact on Consumer Bills:** Expected rise in energy costs for consumers, with projections ranging from £3000 to £4500 annually^[9]^, significantly higher than the previous maximum of £1600 per year^[11]^.
+
+-   **Government Response:**
+
+    -   **Energy Price Guarantee (EPG):** A policy aimed at stabilising energy prices.
+    -   **Energy Bills Support Scheme (EBSS):** A measure to directly support consumer energy expenses.
+    -   **Both:** Implemenetd to reduce the negative externalities associated with reductions in energy consumption.
+
+**Objective of Analysis:** To study the effectiveness of EPG and EBSS, employing a microeconomic perspective to assess the impact of these interventions.
+
+## Introduction and Background {.smaller}
+
+::: columns
+::: {.column style="font-size: 75%;"}
+1.  **Energy Price Guarantee (EPG)**:
+
+    -   **Nature**: Unit rate subsidy applied at the point of use.
+
+    -   **Impact**: Reduces the cost per unit of electricity, leading to lower overall energy costs.
+
+    -   **Consumer Perception**: Subtler impact, as the discount is applied directly to the unit cost.
+:::
+
+::: {.column style="font-size: 75%;"}
+2.  **Energy Bills Support Scheme (EBSS)**:
+
+    -   **Nature**: Direct grant of £400 over 6 months, distributed in installments.
+
+    -   **Implementation**: Majority receive this as credit on their energy accounts.
+
+    -   **Consumer Perception**: More noticeable impact, clearly visible on electricity bills.
+:::
+:::
+
+```{python}
+#| echo: false
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+
+# Data
+data = {
+    'Date': ['Apr-22', 'Jul-22', 'Oct-22', 'Jan-23', 'Apr-23', 'Jul-23', 'Oct-23', 'Jan-24'],
+    'Price Cap': [2000, 2000, 3500, 4750, 3250, 2100, 1900, 2000],
+    'Energy Price Guarantee': [2000, 2000, 2500, 2500, 2500, 3000, 3000, 3000]
+}
+
+# Create DataFrame
+df = pd.DataFrame(data)
+
+# Convert 'Date' to datetime
+df['Date'] = pd.to_datetime(df['Date'], format='%b-%y')
+
+# Create figure with Price Cap line
+fig = px.line(df, x='Date', y='Price Cap', title='Price Cap and Energy Price Guarantee for a Typical Direct Debit Customer <br><sup>Based on a typical dual fuel consumption level of 2,900KWh and 12,000 Gas per anum</sup>')
+fig.update_traces(line_shape='vh', name='Price Cap', showlegend=True) # Add name for legend
+
+# Add Energy Price Guarantee line
+fig.add_scatter(x=df['Date'], y=df['Energy Price Guarantee'], mode='lines', line_shape='vh', line=dict(dash='dash'), name='Energy Price Guarantee')
+
+# Update mask for filling: Only where 'Price Cap' >= 'Energy Price Guarantee'
+mask = df['Price Cap'] >= df['Energy Price Guarantee']
+
+# Add fill only where the condition is met
+fig.add_traces(go.Scatter(
+    x=df['Date'][mask],
+    y=df['Price Cap'][mask],
+    fill='tonexty',
+    mode='none',
+    line_shape='vh',
+    fillcolor='rgba(128, 128, 128, 0.3)',
+    showlegend=False
+))
+
+# Update layout
+fig.update_layout(
+    xaxis_title='Date',
+    yaxis_title='£ per annum',
+    legend=dict(y=-0.3, x=0.5, xanchor='center', yanchor='top', traceorder='reversed', font_size=16),
+    height=350 # Decrease height by 50% (original height is usually 600)
+)
+
+# Show plot
+fig.show()
+```
+
+## Introduction and Background
+
+::: {.callout-warning title="Key Differences"}
+**EPG**: *Volumetric subsidy* - higher consumption leads to greater savings.
+
+**EBSS**: *Uniform subsidy* for all consumers, regardless of consumption levels.
+:::
+
+::: {.callout-important title="Implications"}
+**EPG**: May incentivise higher consumption due to per-unit savings.
+
+**EBSS**: Offers equal relief to all, with proportionally less impact on higher consumers.
+:::
+
+## Energy and an Inelastic Good {.smaller}
+
+::: columns
+::: {.column width="75%"}
+The price elasticity (PE) of demand is a measure of how sensitive price is to the quantity demanded. The literature shows that the PE of energy is inelastic across a range of variables (e.g, country, time, etc.)^\[1,2,3\]^.
+
+Intuitively, this is expected as energy is recognised as a **necessary good**^\[4\]^, meaning it fulfils some essential needs for a consumer. Some examples are cooking, heating and lighting.
+
+However, energy is *not* perfectly inelastic as it does service discretionary needs, such as running appliances, recreation, maintaining lifestyle choices.
+
+Finally, consumers are constrained in their ability to adjust their consumption in the short or long term (e.g., investing in energy efficiency measures).
+:::
+
+::: {.column width="25%"}
+![](images/stove.png) ![](images/tv.png) ![](images/energy_efficiency.png)
+:::
+:::
+
+## Estimating Energy Elasticity by Income Level {.smaller}
+
+A meta-analysis^\[6\]^ gives the following PEs for Energy and sub-types we are focusing on[^1]:
+
+[^1]: \* significant at the 10% level \| \*\*\* significant at the 1% level
+
+::: columns
+::: column
+| Good        | Short-term   | Long-term    |
+|-------------|--------------|--------------|
+| Energy      | -0.207\*\*\* | -0.608\*\*\* |
+| Electricity | -0.126\*     | -0.365\*     |
+| Natural Gas | -0.180\*\*\* | -0.684\*\*\* |
+:::
+
+::: column
+These PEs are an **aggregate** value from different countries (developed, developing), consumer types (residential, industrial, commercial) and time periods.
+
+However, they are a sensible starting point for our microeconomic framework.
+:::
+:::
+
+Literature is sparse in finding how the PE of energy changes for income levels, however this is available for water^\[7\]^.
+
+We argue that water is a similar, necessary good to Energy sharing many of the same characteristics discussed previously.
+
+## Estimating Energy Elasticity by Income Level {.smaller}
+
+We take the Water PE distribution over incomes levels and “fit” this to an aggregated PE for Energy, Electricity and Natural Gas (average between short-term and long-term PEs).
+
+Assumption that the change in PE for water (roughly linear) is the same for Energy due to being a similar good
+
+|                | Low Income | Middle Income | Upper Income | High Income | Mean   |
+|------------|------------|------------|------------|------------|------------|
+| Water PE       | -0.565     | -0.490        | -0.460       | -0.397      | -0.500 |
+| Energy PE      | -0.688     | -0.596        | -0.560       | -0.483      | -0.608 |
+| Electricity EP | -0.413     | -0.358        | -0.336       | -0.290      | -0.365 |
+| Natural Gas PE | -0.774     | -0.671        | -0.630       | -0.544      | -0.684 |
+
+## Investigating Pricing Mechanisms
+
+The EPG was implemented as a unit rate subsidy at point of use, it reduced the cost of each individual unit of electricity consumed.
+
+This was uniform across all domestic consumers and therefore not means tested.
+
+::: {.callout-note title="Our Research"}
+We know PED of energy changes as *income* changes. How can we use this information to determine the optimal price to consumers?
+
+This modelling investigates the price to consumers if the rate was determined solely by the market.
+:::
+
+## Model Set Up {.smaller}
+
+### The Consumer
+
+We assume two consumers: High Income (HI) and Low Income (LI).
+
+Demand function for High Income Consumers:
+
+$$q_{HI} = A - B * p_{HI}$$
+
+Demand function for Low Income Consumers:
+
+$$q_{LI} = C - D * p_{LI}$$
+
+These equations represent the basic linear demand relationship where $q$ is the quantity demanded in MWh, and $p$ is the price in £/MWh.
+
+> The quantity demanded *decreases* as the price increases.
+
+## Model Set Up {.smaller auto-animate="true"}
+
+### The Consumer
+
+Here we select four different parameters: `A`, `B`, `C` and `D`
+
+```{python}
+#| echo: false
+
+# Neccessary Libraries
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import fsolve
+```
+
+```{python}
+#| echo: true
+
+# Define the parameters for the demand functions of High Income (HI) and Low Income (LI) groups
+# Demand function for HI: q_HI = A - B * p_HI
+# Demand function for LI: q_LI = C - D * p_LI
+A, B, C, D = 0.05, 0.01875, 0.04, 0.03  # A, B for HI and C, D for LI
+# Alternative
+A, B, C, D = 0.1, 0.324, 0.15, 0.461  # A, B for HI and C, D for LI
+```
+
+In general, the intercepts (`A` and `C`) tell us about the baseline consumption levels without the influence of price, reflecting factors like needs, preferences, and possibly non-price related socio-economic factors.
+
+The slopes (`B` and `D`), on the other hand, provide insight into how responsive each group is to price changes, indicating their price elasticity of demand.
+
+::: callout-important
+These parameters have been chosen in line with the evidence already laid out.
+:::
+
+## Model Set Up {auto-animate="true"}
+
+Next, we can specify the PED for each of the Income Groups based on our empircal estimates.
+
+| Income Level | \% in UK | Energy PE | Electricity PE | National Gas PE |
+|--------------|----------|-----------|----------------|-----------------|
+| Low          | 0.25     | -0.461    | -0.278         | -0.489          |
+| Middle       | 0.55     | -0.400    | -0.241         | -0.424          |
+| Upper        | 0.15     | -0.375    | -0.226         | -0.398          |
+| High         | 0.05     | -0.324    | -0.195         | -0.34           |
+
+```{python}
+#| echo: true
+epsilon_HI, epsilon_LI = -0.324, -0.461 
+```
+
+## Model Set Up {.smaller auto-animate="true"}
+
+### The Firm
+
+Now we need to specify parameters relevant to the firm. Specifically, the firm faces 3 key constraints:
+
+1)  The Capacity Constraint;
+2)  The Break-Even Constraint;
+3)  The Demand Constraint;
+
+We can define the parameters as follows:
+
+```{python}
+#| echo: true
+
+# Fixed costs that the energy provider needs to cover and the number of days per month
+fixed_costs = 30  # Daily fixed costs in £
+
+# Capacity constraint (maximum energy supply per day) and daily break-even revenue
+capacity_constraint = 1000  # MWh per day
+break_even_revenue = fixed_costs / days_per_month  # Daily revenue needed to break even
+
+# Marginal cost of supplying energy in £/MWh
+MC = 67
+```
+
+## The Uniform Pricing Scenario {auto-animate="true"}
+
+```{python}
+#| output: false
+#| echo: true
+
+# Uniform pricing scenario: A single price for both groups
+# Define functions for total demand and revenue with a uniform price
+def total_demand_uniform_price(price):
+    demand_HI = A - B * price
+    demand_LI = C - D * price
+    total_demand = demand_HI + demand_LI
+    return min(total_demand, capacity_constraint)  # Ensure demand does not exceed capacity
+
+def total_revenue_uniform_price(price):
+    return price * total_demand_uniform_price(price)
+
+# Define a function for the break-even constraint under uniform pricing
+def break_even_uniform_price_constraint(price):
+    return total_revenue_uniform_price(price) - break_even_revenue
+
+# Solve for the uniform price that meets the break-even requirement
+uniform_price_initial_guess = 10
+uniform_price_solution = fsolve(break_even_uniform_price_constraint, 
+                                uniform_price_initial_guess)[0]
+
+```
+
+The optimal price under uniform pricing can then be given as:
+
+```{python}
+#| echo: false
+round(uniform_price_solution, ndigits=2)
+```
+
+## The Uniform Pricing Scenario {auto-animate="true"}
+
+Using this price, we can then calculate consumer surplus.
+
+```{python}
+#| output: false
+#| echo: true
+
+# Function to calculate consumer surplus: CS = 0.5 * base * height
+def calculate_consumer_surplus(a, b, price):
+    base = a - b * price  # base of the demand triangle
+    height = a / b - price  # height of the demand triangle
+    return 0.5 * base * height  # Area representing consumer surplus
+
+# Consumer surplus for HI and LI under uniform pricing
+cs_HI_uniform = calculate_consumer_surplus(A, B, uniform_price_solution)
+cs_LI_uniform = calculate_consumer_surplus(C, D, uniform_price_solution)
+
+```
+
+```{python}
+print(f"Uniform Price: £{uniform_price_solution:.2f}")
+print(f"High Income Consumer Surplus: £{cs_HI_uniform:.2f}")
+print(f"Low Income Consumer Surplus: £{cs_LI_uniform:.2f}")
+```
+
+## Price Discrimination {.smaller auto-animate="true"}
+
+Ramsey Pricing is an economic principle used for price setting, particularly in regulated markets or industries with significant fixed costs.
+
+It aims to minimise the welfare loss associated with taxation or pricing above marginal costs, while ensuring that firms cover their total costs, including the need for a reasonable rate of return.
+
+### Key Components of the Ramsey Pricing Model
+
+1)  **Pricing Formula:** The price $(p_i)$ for each group is set such that $(p_i - MC_{i})/{p_i} = k/\varepsilon_i$
+
+2)  **Revenue Calculation:** The total revenue is calculated by applying the derived prices for the HI and LI groups to their respective demand functions
+
+3)  **Break-even Constraint:** This constraint ensures that the total revenue matches the break-even revenue, which is necessary for the sustainability of operations.
+
+## Ramsey pricing {.smaller auto-animate="true"}
+
+```{python}
+#| echo: true
+# Define a function to calculate total revenue based on Ramsey pricing
+def revenue(k):
+    # Prices for HI and LI are calculated using the Ramsey formula
+    p_HI = MC / (1 - k * epsilon_HI)
+    p_LI = MC / (1 - k * epsilon_LI)
+    
+    # Quantities demanded for HI and LI are derived from the demand functions
+    q_HI = A - B * p_HI
+    q_LI = C - D * p_LI
+    
+    # Total revenue calculation
+    return p_HI * q_HI + p_LI * q_LI
+
+# Define a function for the break-even constraint
+def break_even_constraint(k):
+    # The revenue must match the break-even revenue for sustainability
+    return revenue(k) - break_even_revenue
+
+# Solve for k using fsolve, with an initial guess
+k_initial = 10
+k_solution = fsolve(break_even_constraint, k_initial)[0]
+
+# Calculate the prices for HI and LI using the solved value of k
+p_HI_solution = MC / (1 - k_solution * epsilon_HI)
+p_LI_solution = MC / (1 - k_solution * epsilon_LI)
+
+
+# Consumer surplus for HI and LI under Ramsey pricing
+cs_HI_ramsey = calculate_consumer_surplus(A, B, p_HI_solution)
+cs_LI_ramsey = calculate_consumer_surplus(C, D, p_LI_solution)
+
+print()
+print()
+```
+
+# 
+
+```{python}
+# Plotting
+
+# Function to plot both HI and LI demand curves and consumer surpluses on the same graph
+# with total consumer surplus annotation
+def plot_combined_demand_curves_with_total_cs(a_HI, b_HI, price_HI, a_LI, b_LI, price_LI, title, cs_HI, cs_LI):
+    # Generate a range of quantities for HI and LI
+    quantities_HI = np.linspace(0, a_HI, 500)
+    quantities_LI = np.linspace(0, a_LI, 500)
+    
+    # Calculate prices for each quantity using the inverse demand function
+    prices_HI = (a_HI - quantities_HI) / b_HI
+    prices_LI = (a_LI - quantities_LI) / b_LI
+
+    # Calculate total consumer surplus
+    total_cs_per_year = (cs_HI + cs_LI)*365
+    
+    # Create the plot
+    plt.figure(figsize=(12, 8))
+
+    # Plot HI demand curve and consumer surplus
+    plt.plot(quantities_HI, prices_HI, label="HI Demand Curve")
+    plt.fill_between(quantities_HI, prices_HI, price_HI, where=(quantities_HI <= (a_HI - b_HI * price_HI)), 
+                     color='lightblue', alpha=0.5, label=f"HI CS: ${cs_HI:.2f}")
+
+    # Plot LI demand curve and consumer surplus
+    plt.plot(quantities_LI, prices_LI, label="LI Demand Curve", color='orange')
+    plt.fill_between(quantities_LI, prices_LI, price_LI, where=(quantities_LI <= (a_LI - b_LI * price_LI)), 
+                     color='lightgreen', alpha=0.5, label=f"LI CS: ${cs_LI:.2f}")
+
+    # Price lines for HI and LI
+    plt.axhline(y=price_HI, color='blue', linestyle='--', label=f"HI Price = ${price_HI:.2f}")
+    plt.axhline(y=price_LI, color='green', linestyle='--', label=f"LI Price = ${price_LI:.2f}")
+
+    # Total consumer surplus annotation
+    plt.annotate(f"Total CS per Year: ${total_cs_per_year:.2f}", xy=(0.05, 0.95), xycoords='axes fraction', 
+                 fontsize=12, bbox=dict(boxstyle="round,pad=0.3", edgecolor='black', facecolor='yellow'))
+
+    # Labels and title
+    plt.xlabel("Quantity Demanded")
+    plt.ylabel("Price")
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+
+```
+
+```{python}
+# Plot for both groups under Uniform Pricing with total consumer surplus annotation
+plot_combined_demand_curves_with_total_cs(A, B, uniform_price_solution, C, D, uniform_price_solution, 
+                                          "Uniform Pricing - High Income & Low Income Groups", 
+                                          cs_HI_uniform, cs_LI_uniform)
+```
+
+# 
+
+```{python}
+# Plot for both groups under Ramsey Pricing with total consumer surplus annotation
+plot_combined_demand_curves_with_total_cs(A, B, p_HI_solution, C, D, p_LI_solution, 
+                                          "Ramsey Pricing - High Income & Low Income Groups", 
+                                          cs_HI_ramsey, cs_LI_ramsey)
+```
+
+## Conclusion {.smaller}
+
+::: {style="font-size: 90%;"}
+The “Price Shock” in Summer-22 caused Energy as a spend of expenditure to rise over 20pp from Oct-21 to Jan-23 for the Lowest Decile Income Household and over 5pp for the Highest Decile Income.
+
+EBSS and EPG delivered rapidly, in a crisis - with the aim to protect consumer welfare.
+:::
+
+::: columns
+::: column
+![](images/energy_as_share_of_income.png)
+:::
+
+::: column
+EBSS and EPG criticised for not being more targeted^\[8\]^ but unclear *how much more* value for money or efficient a targeted policy may have been.
+
+We have attempted to create a framework to allow policy makers to understand the “**value space**” that a more targeted policy can access
+:::
+:::
+
+## Conclusion {.smaller}
+
+We have shown that there is likely a significant difference in price elasticity for energy at different income groups.
+
+-   Lower-income households are less inelastic than higher-income
+
+-   But this can only be up to a point where all discretionary spending on energy stops
+
+By using PEs for different income groups, we have shown that there is a change in consumer welfare impact when using a price based policy intervention - which is likely inefficient
+
+There is a “Value Space” to more targeted policies.
+
+::: {.callout-important title="Findings"}
+With more detailed, accurate information - Policy Makers could use this framework like this to assess whether to employ targeted approach (which takes more time and resource) versus a blanket approach.
+:::
+
+
+## References {.smaller}
+
+\[1\] The Price Elasticity of Electricity Demand in the United States: A Three-Dimensional Analysis (2018): https://www.jstor.org/stable/26534427
+
+\[2\] Aggregate Elasticity of Energy Demand (1981): https://www.jstor.org/stable/41321496
+
+\[3\] Estimating the Short-Run Income Elasticity of Demand for Electricity by Using Cross-Sectional Categorized Data: https://www.jstor.org/stable/2287881
+
+\[4\] Necessary energy uses and a minimum standard of living in the United Kingdom: Energy justice or escalating expectations?: https://doi.org/10.1016/j.erss.2016.02.007
+
+\[5\] New Empirical Generalizations on the Determinants of Price Elasticity (2005): https://www.jstor.org/stable/30164013
+
+\[6\] A meta-analysis on the price elasticity of energy demand (2017): https://www.sciencedirect.com/science/article/pii/S0301421517300022
+
+\[7\] Equity, Price Elasticity, and Household Income under Increasing Block Rates for Water: https://www.jstor.org/stable/3486079
+
+\[8\] Preparing for the winter: Government Response to the Committee’s First Report of Session 2022–23: https://publications.parliament.uk/pa/cm5804/cmselect/cmesnz/401/report.html
+
+\[9\] https://www.theguardian.com/money/2022/oct/17/energy-price-guarantee-cap-household-bills-4347-april-hunt
+
+\[10\] https://www.ofgem.gov.uk/publications/latest-energy-price-cap-announced-ofgem
+
+\[11\] https://publications.parliament.uk/pa/bills/cbill/58-03/0159/AnnexB.pdf
